@@ -16,8 +16,12 @@ Extract these from $ARGUMENTS — the user may provide extensive context alongsi
 - `Verify:` — shell command after "Verify:" keyword
 - `Guard:` — shell command after "Guard:" keyword (optional)
 - `Iterations:` or `--iterations` — integer N for bounded mode (CRITICAL: if set, you MUST run exactly N iterations then stop)
+- `Context-Mode:` — `inline` (default) or `fresh` (spawns worker subagent per iteration, prevents context bloat)
+- `--resume` — resume a previous fresh-mode run from autoresearch-state.json
 
 If `Iterations: N` or `--iterations N` is found, set `max_iterations = N`. Track `current_iteration` starting at 0. After iteration N, print final summary and STOP.
+
+If `Context-Mode: fresh` is set, read `.opencode/skills/autoresearch/references/context-rotation-protocol.md` and use worker subagent dispatch in Phase 3 instead of inline modification.
 
 ## Execution
 

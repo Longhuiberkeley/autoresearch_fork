@@ -53,8 +53,15 @@ for f in "$SRC"/references/*.md; do
   printf '  synced: references/%s\n' "$basename"
 done
 
-# Sync and adapt SKILL.md (requires extra frontmatter changes)
+# Sync SKILL.md
 adapt_file "$SRC/SKILL.md" "$DST/SKILL.md"
+
+# Sync worker subagent
+if [[ -f "$REPO_ROOT/.claude/agents/autoresearch-worker.md" ]]; then
+  mkdir -p "$DST/agents"
+  adapt_file "$REPO_ROOT/.claude/agents/autoresearch-worker.md" "$DST/agents/autoresearch-worker.md"
+  printf '  synced: agents/autoresearch-worker.md\n'
+fi
 
 # Patch frontmatter: remove version, add metadata block
 python3 -c "

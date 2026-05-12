@@ -11,7 +11,7 @@ description: >-
 compatibility: opencode
 metadata:
   source: claude-port
-  version: 2.0.03
+  version: 2.0.04
 ---
 
 # OpenCode Autoresearch — Autonomous Goal-directed Iteration
@@ -77,534 +77,22 @@ For ALL commands (`/autoresearch`, `/autoresearch_plan`, `/autoresearch_debug`, 
 | `/autoresearch_reason` | Adversarial refinement for subjective domains: isolated multi-agent generate→critique→synthesize→blind judge loop until convergence |
 | `/autoresearch_probe` | Adversarial multi-persona requirement / assumption interrogation: probes user + codebase until net-new constraints saturate, emits ready-to-run autoresearch config |
 
-### /autoresearch_security — Autonomous Security Audit
-
-Runs a comprehensive security audit using the autoresearch loop pattern. Generates a full STRIDE threat model, maps attack surfaces, then iteratively tests each vulnerability vector — logging findings with severity, OWASP category, and code evidence.
-
-Load: `references/security-workflow.md` for full protocol.
-
-**What it does:**
-
-1. **Codebase Reconnaissance** — scans tech stack, dependencies, configs, API routes
-2. **Asset Identification** — catalogs data stores, auth systems, external services, user inputs
-3. **Trust Boundary Mapping** — browser↔server, public↔authenticated, user↔admin, CI/CD↔prod
-4. **STRIDE Threat Model** — Spoofing, Tampering, Repudiation, Info Disclosure, DoS, Elevation of Privilege
-5. **Attack Surface Map** — entry points, data flows, abuse paths
-6. **Autonomous Loop** — iteratively tests each vector, validates with code evidence, logs findings
-7. **Final Report** — severity-ranked findings with mitigations, coverage matrix, iteration log
-
-**Key behaviors:**
-- Follows red-team adversarial mindset (Security Adversary, Supply Chain, Insider Threat, Infra Attacker)
-- Every finding requires **code evidence** (file:line + attack scenario) — no theoretical fluff
-- Tracks OWASP Top 10 + STRIDE coverage, prints coverage summary every 5 iterations
-- Composite metric: `(owasp_tested/10)*50 + (stride_tested/6)*30 + min(findings, 20)` — higher is better
-- Creates `security/{YYMMDD}-{HHMM}-{audit-slug}/` folder with structured reports:
-  `overview.md`, `threat-model.md`, `attack-surface-map.md`, `findings.md`, `owasp-coverage.md`, `dependency-audit.md`, `recommendations.md`, `security-audit-results.tsv`
-
-**Flags:**
-
-| Flag | Purpose |
-|------|---------|
-| `--diff` | Delta mode — only audit files changed since last audit |
-| `--fix` | After audit, auto-fix confirmed Critical/High findings using autoresearch loop |
-| `--fail-on {severity}` | Exit non-zero if findings meet threshold (for CI/CD gating) |
-
-**Usage:**
-```
-# Unlimited — keep finding vulnerabilities until interrupted
-/autoresearch_security
-
-# Bounded — exactly 10 security sweep iterations
-/autoresearch_security
-Iterations: 10
-
-# With focused scope
-/autoresearch_security
-Scope: src/api/**/*.ts, src/middleware/**/*.ts
-Focus: authentication and authorization flows
-
-# Delta mode — only audit changed files since last audit
-/autoresearch_security --diff
-
-# Auto-fix confirmed Critical/High findings after audit
-/autoresearch_security --fix
-Iterations: 15
-
-# CI/CD gate — fail pipeline if any Critical findings
-/autoresearch_security --fail-on critical
-Iterations: 10
-
-# Combined — delta audit + fix + gate
-/autoresearch_security --diff --fix --fail-on critical
-Iterations: 15
-```
-
-**Inspired by:**
-- [Strix](https://github.com/usestrix/strix) — AI-powered security testing with proof-of-concept validation
-- `/plan red-team` — adversarial review with hostile reviewer personas
-- OWASP Top 10 (2021) — industry-standard vulnerability taxonomy
-- STRIDE — Microsoft's threat modeling framework
-
-### /autoresearch_ship — Universal Shipping Workflow
-
-Ship anything — code, content, marketing, sales, research, or design — through a structured 8-phase workflow that applies autoresearch loop principles to the last mile.
-
-Load: `references/ship-workflow.md` for full protocol.
-
-**What it does:**
-
-1. **Identify** — auto-detect what you're shipping (code PR, deployment, blog post, email campaign, sales deck, research paper, design assets)
-2. **Inventory** — assess current state and readiness gaps
-3. **Checklist** — generate domain-specific pre-ship gates (all mechanically verifiable)
-4. **Prepare** — autoresearch loop to fix failing checklist items until 100% pass
-5. **Dry-run** — simulate the ship action without side effects
-6. **Ship** — execute the actual delivery (merge, deploy, publish, send)
-7. **Verify** — post-ship health check confirms it landed
-8. **Log** — record shipment to `ship-log.tsv` for traceability
-
-**Supported shipment types:**
-
-| Type | Example Ship Actions |
-|------|---------------------|
-| `code-pr` | `gh pr create` with full description |
-| `code-release` | Git tag + GitHub release |
-| `deployment` | CI/CD trigger, `kubectl apply`, push to deploy branch |
-| `content` | Publish via CMS, commit to content branch |
-| `marketing-email` | Send via ESP (SendGrid, Mailchimp) |
-| `marketing-campaign` | Activate ads, launch landing page |
-| `sales` | Send proposal, share deck |
-| `research` | Upload to repository, submit paper |
-| `design` | Export assets, share with stakeholders |
-
-**Flags:**
-
-| Flag | Purpose |
-|------|---------|
-| `--dry-run` | Validate everything but don't actually ship (stop at Phase 5) |
-| `--auto` | Auto-approve dry-run gate if no errors |
-| `--force` | Skip non-critical checklist items (blockers still enforced) |
-| `--rollback` | Undo the last ship action (if reversible) |
-| `--monitor N` | Post-ship monitoring for N minutes |
-| `--type <type>` | Override auto-detection with explicit shipment type |
-| `--checklist-only` | Only generate and evaluate checklist (stop at Phase 3) |
-
-**Usage:**
-```
-# Auto-detect and ship (interactive)
-/autoresearch_ship
-
-# Ship code PR with auto-approve
-/autoresearch_ship --auto
-
-# Dry-run a deployment before going live
-/autoresearch_ship --type deployment --dry-run
-
-# Ship with post-deployment monitoring
-/autoresearch_ship --monitor 10
-
-# Prepare iteratively then ship
-/autoresearch_ship
-Iterations: 5
-
-# Just check if something is ready to ship
-/autoresearch_ship --checklist-only
-
-# Ship a blog post
-/autoresearch_ship
-Target: content/blog/my-new-post.md
-Type: content
-
-# Ship a sales deck
-/autoresearch_ship --type sales
-Target: decks/q1-proposal.pdf
-
-# Rollback a bad deployment
-/autoresearch_ship --rollback
-```
-
-**Composite metric (for bounded loops):**
-```
-ship_score = (checklist_passing / checklist_total) * 80
-           + (dry_run_passed ? 15 : 0)
-           + (no_blockers ? 5 : 0)
-```
-Score of 100 = fully ready. Below 80 = not shippable.
-
-**Output directory:** Creates `ship/{YYMMDD}-{HHMM}-{ship-slug}/` with `checklist.md`, `ship-log.tsv`, `summary.md`.
-
-### /autoresearch_scenario — Scenario-Driven Use Case Generator
-
-Autonomous scenario exploration engine that generates, expands, and stress-tests use cases from a seed scenario. Discovers edge cases, failure modes, and derivative scenarios that manual analysis misses.
-
-Load: `references/scenario-workflow.md` for full protocol.
-
-**What it does:**
-
-1. **Seed Analysis** — parse scenario, identify actors, goals, preconditions, components
-2. **Decomposition** — break into 12 exploration dimensions (happy path, error, edge case, abuse, scale, concurrent, temporal, data variation, permission, integration, recovery, state transition)
-3. **Situation Generation** — create one concrete situation per iteration from unexplored dimensions
-4. **Classification** — deduplicate (new/variant/duplicate/out-of-scope/low-value)
-5. **Expansion** — derive edge cases, what-ifs, failure modes from each kept situation
-6. **Logging** — record to scenario-results.tsv with dimension, severity, classification
-7. **Repeat** — pick next unexplored dimension/combination, iterate
-
-**Key behaviors:**
-- Adaptive interactive setup: 4-8 questions based on how much context the user provides
-- 12 exploration dimensions ensure comprehensive coverage
-- Domain-specific templates (software, product, business, security, marketing)
-- Every situation requires concrete trigger, flow, and expected outcome — no vague "something goes wrong"
-- Composite metric: `scenarios_generated*10 + edge_cases_found*15 + (dimensions_covered/12)*30 + unique_actors*5`
-- Creates `scenario/{YYMMDD}-{HHMM}-{slug}/` with: `scenarios.md`, `use-cases.md`, `edge-cases.md`, `scenario-results.tsv`, `summary.md`
-
-**Flags:**
-
-| Flag | Purpose |
-|------|---------|
-| `--domain <type>` | Set domain (software, product, business, security, marketing) |
-| `--depth <level>` | Exploration depth: shallow (10), standard (25), deep (50+) |
-| `--scope <glob>` | Limit to specific files/features |
-| `--format <type>` | Output: use-cases, user-stories, test-scenarios, threat-scenarios, mixed |
-| `--focus <area>` | Prioritize dimension: edge-cases, failures, security, scale |
-
-**Usage:**
-```
-# Unlimited — keep exploring until interrupted
-/autoresearch_scenario
-
-# Bounded with context
-/autoresearch_scenario
-Scenario: User attempts checkout with multiple payment methods
-Domain: software
-Depth: standard
-Iterations: 25
-
-# Quick edge case scan
-/autoresearch_scenario --depth shallow --focus edge-cases
-Scenario: File upload feature for profile pictures
-
-# Security-focused
-/autoresearch_scenario --domain security
-Scenario: OAuth2 login flow with third-party providers
-Iterations: 30
-
-# Generate test scenarios
-/autoresearch_scenario --format test-scenarios --domain software
-Scenario: REST API pagination with filtering and sorting
-```
-
-### /autoresearch_predict — Multi-Persona Swarm Prediction
-
-Multi-perspective code analysis using swarm intelligence principles. Simulates 3-5 expert personas (Architect, Security Analyst, Performance Engineer, Reliability Engineer, Devil's Advocate) that independently analyze code, debate findings, and reach consensus — all within Claude's native context. Zero external dependencies.
-
-Load: `references/predict-workflow.md` for full protocol.
-
-**What it does:**
-
-1. **Codebase Reconnaissance** — scan files, extract entities, map dependencies into knowledge .md files
-2. **Persona Generation** — create 3-5 expert personas from codebase context
-3. **Independent Analysis** — each persona analyzes code from their unique perspective
-4. **Structured Debate** — 1-2 rounds of cross-examination with mandatory Devil's Advocate dissent
-5. **Consensus** — synthesizer aggregates findings with confidence scores + anti-herd check
-6. **Knowledge Output** — write predict/ folder with codebase-analysis.md, dependency-map.md, component-clusters.md
-7. **Report** — generate findings.md, hypothesis-queue.md, overview.md
-8. **Handoff** — write handoff.json for optional --chain to debug/security/fix/ship/scenario
-
-**Key behaviors:**
-- File-based knowledge representation: .md files ARE the knowledge graph, zero external deps
-- Git-hash stamping: every output embeds commit SHA for staleness detection
-- Incremental updates: only re-analyzes files changed since last run
-- Anti-herd mechanism: Devil's Advocate mandatory, groupthink detection via flip rate + entropy
-- Empirical evidence always trumps swarm prediction when chained with autoresearch loop
-- Composite metric: `findings_confirmed*15 + findings_probable*8 + minority_preserved*3 + (personas/total)*20 + (rounds/planned)*10 + anti_herd_passed*5`
-- Creates `predict/{YYMMDD}-{HHMM}-{slug}/` folder with: `overview.md`, `codebase-analysis.md`, `dependency-map.md`, `component-clusters.md`, `persona-debates.md`, `hypothesis-queue.md`, `findings.md`, `predict-results.tsv`, `handoff.json`
-
-**Flags:**
-
-| Flag | Purpose |
-|------|---------|
-| `--chain <targets>` | Chain to tools. Single: `--chain debug`. Multi: `--chain scenario,debug,fix` (sequential) |
-| `--personas N` | Number of personas (default: 5, range: 3-8) |
-| `--rounds N` | Debate rounds (default: 2, range: 1-3) |
-| `--depth <level>` | Depth preset: shallow (3 personas, 1 round), standard (5, 2), deep (8, 3) |
-| `--adversarial` | Use adversarial persona set (Red Team, Blue Team, Insider, Supply Chain, Judge) |
-| `--budget <N>` | Max total findings across all personas (default: 40) |
-| `--fail-on <severity>` | Exit non-zero if findings at or above severity (for CI/CD) |
-| `--scope <glob>` | Limit analysis to specific files |
-
-**Usage:**
-```
-# Standard analysis
-/autoresearch_predict
-Scope: src/**/*.ts
-Goal: Find reliability issues
-
-# Quick security scan
-/autoresearch_predict --depth shallow --chain security
-Scope: src/api/**
-
-# Deep analysis with adversarial debate
-/autoresearch_predict --depth deep --adversarial
-Goal: Pre-deployment quality audit
-
-# CI/CD gate
-/autoresearch_predict --fail-on critical --budget 20
-Scope: src/**
-Iterations: 1
-
-# Chain to debug for hypothesis-driven investigation
-/autoresearch_predict --chain debug
-Scope: src/auth/**
-Goal: Investigate intermittent 500 errors
-
-# Multi-chain: predict → scenario → debug → fix (sequential pipeline)
-/autoresearch_predict --chain scenario,debug,fix
-Scope: src/**
-Goal: Full quality pipeline for new feature
-```
-
-### /autoresearch_learn — Autonomous Codebase Documentation Engine
-
-Scouts codebase structure, learns patterns and architecture, generates/updates comprehensive documentation — then validates and iteratively improves until docs match codebase reality.
-
-Load: `references/learn-workflow.md` for full protocol.
-
-**What it does:**
-
-1. **Scout** — parallel codebase reconnaissance with scale awareness and monorepo detection
-2. **Analyze** — project type classification, tech stack detection, staleness measurement
-3. **Map** — dynamic doc discovery (`docs/*.md`), gap analysis, conditional doc selection
-4. **Generate** — spawn docs-manager with structured prompt template and full context
-5. **Validate** — mechanical verification (code refs, links, completeness, size compliance)
-6. **Fix** — validation-fix loop: re-generate failed docs with feedback (max 3 retries)
-7. **Finalize** — inventory check, git diff summary, size compliance
-8. **Log** — record results to learn-results.tsv
-
-**4 Modes:**
-
-| Mode | Purpose | Autoresearch Loop? |
-|------|---------|-------------------|
-| `init` | Learn codebase from scratch, generate all docs | Yes — validate-fix cycle |
-| `update` | Learn what changed, refresh existing docs | Yes — validate-fix cycle |
-| `check` | Read-only health/staleness assessment | No — diagnostic only |
-| `summarize` | Quick codebase summary with file inventory | Minimal — size check only |
-
-**Key behaviors:**
-- Fully dynamic doc discovery — scans `docs/*.md`, no hardcoded file lists
-- State-aware mode detection — auto-selects init/update based on docs/ state
-- Project-type-adaptive — creates deployment-guide.md only if deployment config exists
-- Validation-fix loop capped at 3 retries — escalates to user if unresolved
-- Scale-aware scouting — adjusts parallelism for 5k+ file codebases
-- Composite metric: `learn_score = validation%×0.5 + coverage%×0.3 + size_compliance%×0.2`
-- Creates `learn/{YYMMDD}-{HHMM}-{slug}/` with: `learn-results.tsv`, `summary.md`, `validation-report.md`, `scout-context.md`
-
-**Flags:**
-
-| Flag | Purpose |
-|------|---------|
-| `--mode <mode>` | Operation: init, update, check, summarize (default: auto-detect) |
-| `--scope <glob>` | Limit codebase learning to specific dirs |
-| `--depth <level>` | Doc comprehensiveness: quick, standard, deep |
-| `--scan` | Force fresh scout in summarize mode |
-| `--topics <list>` | Focus summarize on specific topics |
-| `--file <name>` | Selective update — target single doc |
-| `--no-fix` | Skip validation-fix loop |
-| `--format <fmt>` | Output format: markdown (default). Planned: confluence, rst, html |
-
-**Usage:**
-```
-# Auto-detect mode and learn
-/autoresearch_learn
-
-# Initialize docs for new project
-/autoresearch_learn --mode init --depth deep
-
-# Update docs after changes
-/autoresearch_learn --mode update
-Iterations: 3
-
-# Read-only health check
-/autoresearch_learn --mode check
-
-# Quick summary
-/autoresearch_learn --mode summarize --scan
-
-# Selective update of one doc
-/autoresearch_learn --mode update --file system-architecture.md
-
-# Scoped learning
-/autoresearch_learn --scope src/api/**
-Iterations: 5
-```
-
-### /autoresearch_reason — Adversarial Refinement for Subjective Domains
-
-Isolated multi-agent adversarial refinement loop. Generates, critiques, synthesizes, and blind-judges outputs through repeated rounds until convergence. Extends autoresearch to subjective domains where no objective metric (val_bpb) exists — the blind judge panel IS the fitness function.
-
-Load: `references/reason-workflow.md` for full protocol.
-
-**What it does:**
-
-1. **Generate-A** — Author-A produces first candidate from task only (cold-start, no history)
-2. **Critic** — Fresh agent attacks A as strawman (minimum 3 weaknesses, sees only A)
-3. **Generate-B** — Author-B sees task + A + critique, produces B (no prior round history)
-4. **Synthesize-AB** — Synthesizer sees task + A + B only (no critique, no judge history), produces AB
-5. **Judge Panel** — N blind judges with crypto-random label assignment pick winner of A/B/AB
-6. **Convergence Check** — If incumbent wins N consecutive rounds → stop. Oscillation detection → stop + flag
-7. **Handoff** — Write lineage files, optional `--chain` to downstream autoresearch tools
-
-**Key behaviors:**
-- Every agent is a cold-start fresh invocation — no shared session, prevents sycophancy
-- Judges receive randomized labels (X/Y/Z, not A/B/AB) — forced comparative evaluation, not individual praise
-- Convergence = N consecutive rounds where incumbent wins majority vote (default: 3)
-- Oscillation detection: if incumbent changes 5+ times without consecutive wins → forced stop
-- Supports `--chain` for piping converged output to any autoresearch subcommand
-- Composite metric: `reason_score = quality_delta*30 + rounds_survived*5 + judge_consensus*20 + critic_fatals_addressed*15 + convergence*10 + no_oscillation*5`
-- Creates `reason/{YYMMDD}-{HHMM}-{slug}/` with: `overview.md`, `lineage.md`, `candidates.md`, `judge-transcripts.md`, `reason-results.tsv`, `reason-lineage.jsonl`, `handoff.json`
-
-**Flags:**
-
-| Flag | Purpose |
-|------|---------|
-| `--iterations N` | Bounded mode — run exactly N rounds |
-| `--judges N` | Judge count (3-7, odd preferred, default: 3) |
-| `--convergence N` | Consecutive wins to converge (2-5, default: 3) |
-| `--mode <mode>` | convergent (default), creative (no auto-stop), debate (no synthesis) |
-| `--domain <type>` | Shape judge personas: software, product, business, security, research, content |
-| `--chain <targets>` | Chain to tools. Single: `--chain debug`. Multi: `--chain scenario,debug,fix` (sequential) |
-| `--judge-personas <list>` | Override default judge personas |
-| `--no-synthesis` | Skip synthesis step (A vs B only, alias for `--mode debate`) |
-
-**Usage:**
-```
-# Standard convergent refinement
-/autoresearch_reason
-Task: Should we use event sourcing for our order management system?
-Domain: software
-
-# Bounded with custom judges
-/autoresearch_reason --judges 5 --iterations 10
-Task: Write a compelling pitch for our Series A
-Domain: business
-
-# Creative mode — explore alternatives, no convergence stop
-/autoresearch_reason --mode creative --iterations 8
-Task: Design the authentication architecture for a multi-tenant SaaS platform
-Domain: software
-
-# Chain to downstream tools after convergence
-/autoresearch_reason --chain scenario,debug,fix
-Task: Propose a caching strategy for high-traffic API endpoints
-Domain: software
-Iterations: 6
-
-# Debate mode — A vs B, no synthesis
-/autoresearch_reason --mode debate --judges 5
-Task: Is microservices the right architecture for our 5-person startup?
-Domain: software
-
-# Multi-chain pipeline: reason → plan → fix
-/autoresearch_reason --chain plan,fix
-Task: Design the database schema for our order management system
-Domain: software
-Iterations: 5
-```
-
-### /autoresearch_probe — Adversarial Requirement & Assumption Interrogation
-
-Multi-persona probe loop that interrogates user and codebase through 8 personas until net-new constraints per round drop below a threshold (mechanical saturation). Emits the 5 autoresearch primitives (Goal/Scope/Metric/Direction/Verify) plus a handoff config ready to feed any other autoresearch command. Probe is the upstream tool — chain it before plan, predict, debug, scenario, reason, fix, ship, or learn.
-
-Load: `references/probe-workflow.md` for full protocol.
-
-**What it does:**
-
-1. **Seed Capture** — parse topic, tokenize seed atoms (actor, action, scope hints)
-2. **Persona Activation** — pick N personas from 8 defaults (Skeptic, Edge-Case Hunter, Scope Sentinel, Ambiguity Detective, Contradiction Finder, Prior-Art Investigator, Success-Criteria Auditor, Constraint Excavator)
-3. **Codebase Grounding** — scan `--scope` glob, build prior-art ledger
-4. **Round Generation** — each persona drafts 1-2 candidate questions cold-start
-5. **Question Synthesis** — dedupe, drop already-answered, cap at ≤5 per round
-6. **Answer Capture** — single batched `question` call (or self-answer if `--mode autonomous`)
-7. **Constraint Extraction** — classify atoms into 7 types (Requirement, Assumption, Constraint, Risk, Out-of-scope, Ambiguity, Contradiction)
-8. **Cross-Check** — validate atoms against prior-art ledger and earlier rounds
-9. **Saturation Check** — net-new < threshold for K consecutive rounds → SATURATED
-10. **Synthesize & Handoff** — emit `probe-spec.md`, `autoresearch-config.yml`, `summary.md`, `handoff.json`; if `--chain`, sequential downstream invocations
-
-**Key behaviors:**
-- Mechanical saturation (not gut feel) — net-new constraint count windowed over K=3 rounds
-- 8 personas with distinct interrogation styles; `--adversarial` rotates the 3 most adversarial to the front
-- Codebase grounding (Phase 3) is mandatory — questions calibrated against real prior art
-- Composite metric: `probe_score = constraints_extracted*10 + contradictions_resolved*25 + hidden_assumptions_surfaced*20 + ambiguities_clarified*15 + (dimensions_covered/total)*30 + (saturated?100:0) + (config_complete?50:0)`
-- Creates `probe/{YYMMDD}-{HHMM}-{slug}/` with: `probe-spec.md`, `constraints.tsv`, `questions-asked.tsv`, `contradictions.md`, `hidden-assumptions.md`, `autoresearch-config.yml`, `summary.md`, `handoff.json`
-
-**Flags:**
-
-| Flag | Purpose |
-|------|---------|
-| `--depth <level>` | shallow (5 rounds), standard (15), deep (30) |
-| `--personas N` | active persona count (3-8, default 6) |
-| `--saturation-threshold N` | net-new atoms threshold (default 2, window K=3) |
-| `--scope <glob>` | codebase glob for Phase 3 grounding |
-| `--chain <targets>` | comma-separated downstream commands |
-| `--mode <mode>` | interactive (default) or autonomous (self-answer) |
-| `--adversarial` | rotate Skeptic + Contradiction Finder + Edge-Case Hunter to front |
-| `--iterations N` | hard cap on rounds, overrides `--depth` |
-
-**Usage:**
-```
-# Unlimited interactive — until saturation
-/autoresearch_probe
-Topic: Add streaming responses to the chat API
-
-# Bounded with deep persona set
-/autoresearch_probe --depth deep --personas 8 --adversarial
-Topic: Decide which endpoints need OAuth2 vs API keys
-
-# Pre-flight pipeline — probe then plan then loop
-/autoresearch_probe --chain plan,autoresearch
-Topic: Reduce p99 latency below 200ms for /search
-
-# Autonomous CI/CD constraint sanity-check
-/autoresearch_probe --mode autonomous --iterations 5
-Topic: Pre-merge guard for src/billing/**
-
-# Interrogate ambiguity then converge debate
-/autoresearch_probe --chain reason
-Topic: Architecture for multi-tenant rate limiting
-```
-
-**Stop conditions:** `SATURATED` (net-new < threshold for K rounds) | `BOUNDED` (Iterations exhausted) | `USER_INTERRUPT` (Ctrl+C, persists round atoms) | `SCOPE_LOCKED` (all atoms classified out-of-scope for 2 rounds)
-
-### /autoresearch_plan — Goal → Configuration Wizard
-
-Converts a plain-language goal into a validated, ready-to-execute autoresearch configuration.
-
-Load: `references/plan-workflow.md` for full protocol.
-
-**Quick summary:**
-
-1. **Capture Goal** — ask what the user wants to improve (or accept inline text)
-2. **Analyze Context** — scan codebase for tooling, test runners, build scripts
-3. **Define Scope** — suggest file globs, validate they resolve to real files
-4. **Define Metric** — suggest mechanical metrics, validate they output a number
-5. **Define Direction** — higher or lower is better
-6. **Define Verify** — construct the shell command, **dry-run it**, confirm it works
-7. **Confirm & Launch** — present the complete config, offer to launch immediately
-
-**Critical gates:**
-- Metric MUST be mechanical (outputs a parseable number, not subjective)
-- Verify command MUST pass a dry run on the current codebase before accepting
-- Scope MUST resolve to ≥1 file
-
-**Usage:**
-```
-/autoresearch_plan
-Goal: Make the API respond faster
-
-/autoresearch_plan Increase test coverage to 95%
-
-/autoresearch_plan Reduce bundle size below 200KB
-```
-
-After the wizard completes, the user gets a ready-to-paste `/autoresearch` invocation — or can launch it directly.
+### Subcommand details
+
+Each subcommand has a dedicated workflow ref with full protocol, flags, composite metric, and output directory layout. Load the ref on invocation.
+
+- **`/autoresearch_plan`** — Wizard that converts a plain-language Goal into validated Scope/Metric/Direction/Verify. Gates: metric must be mechanical, Verify must pass a dry-run, Scope must resolve to ≥1 file. Ref: `references/plan-workflow.md`.
+- **`/autoresearch_security`** — STRIDE + OWASP Top 10 + 4-persona red-team audit. Composite metric: `(owasp_tested/10)*50 + (stride_tested/6)*30 + min(findings, 20)`. Flags: `--diff`, `--fix`, `--fail-on <severity>`. Output: `security/{YYMMDD}-{HHMM}-{slug}/`. Ref: `references/security-workflow.md`.
+- **`/autoresearch_ship`** — 8-phase universal ship workflow (code-pr, release, deploy, content, marketing, sales, research, design). Composite metric: `(checklist_passing/total)*80 + dry_run_passed*15 + no_blockers*5`. Flags: `--dry-run`, `--auto`, `--force`, `--rollback`, `--monitor N`, `--type <type>`, `--checklist-only`. Output: `ship/{YYMMDD}-{HHMM}-{slug}/`. Ref: `references/ship-workflow.md`.
+- **`/autoresearch_debug`** — Scientific-method bug hunter (hypothesize → test → log → repeat) with 7 investigation techniques. Composite metric: `bugs_found*15 + hypotheses_tested*3 + (files_investigated/total)*40 + (techniques_used/7)*10`. Flags: `--fix`, `--symptom`, `--severity`, `--technique`, `--chain`. Output: `debug/{YYMMDD}-{HHMM}-{slug}/`. Ref: `references/debug-workflow.md`.
+- **`/autoresearch_fix`** — Iterative error-repair loop (one atomic fix per iteration, auto-revert on regression). Fix priority: build → critical bugs → types → tests → medium/low bugs → lint → warnings. Flags: `--target`, `--guard`, `--category`, `--skip-lint`, `--from-debug`. Output: `fix/{YYMMDD}-{HHMM}-{slug}/`. Ref: `references/fix-workflow.md`.
+- **`/autoresearch_scenario`** — Seed-scenario explorer across 12 dimensions (happy path, error, edge, abuse, scale, concurrent, temporal, data variation, permission, integration, recovery, state). Composite metric: `scenarios_generated*10 + edge_cases_found*15 + (dimensions_covered/12)*30 + unique_actors*5`. Flags: `--domain`, `--depth`, `--format`, `--focus`. Output: `scenario/{YYMMDD}-{HHMM}-{slug}/`. Ref: `references/scenario-workflow.md`.
+- **`/autoresearch_predict`** — 3-5 persona swarm prediction with mandatory Devil's Advocate. Composite metric weights confirmed/probable findings, persona coverage, debate rounds, anti-herd pass. Flags: `--personas`, `--rounds`, `--depth`, `--adversarial`, `--budget`, `--fail-on`, `--chain`. Output: `predict/{YYMMDD}-{HHMM}-{slug}/`. Ref: `references/predict-workflow.md`.
+- **`/autoresearch_learn`** — Codebase documentation engine with 4 modes (init / update / check / summarize) and validation-fix loop (max 3 retries). Composite metric: `validation%×0.5 + coverage%×0.3 + size_compliance%×0.2`. Flags: `--mode`, `--depth`, `--scan`, `--topics`, `--file`, `--no-fix`, `--format`. Output: `learn/{YYMMDD}-{HHMM}-{slug}/`. Ref: `references/learn-workflow.md`.
+- **`/autoresearch_reason`** — Generate-A → Critic → Generate-B → Synthesize → blind-judge panel, until N consecutive incumbent wins. Modes: convergent (default), creative, debate. Flags: `--judges`, `--convergence`, `--mode`, `--domain`, `--judge-personas`, `--no-synthesis`, `--chain`. Output: `reason/{YYMMDD}-{HHMM}-{slug}/`. Ref: `references/reason-workflow.md`.
+- **`/autoresearch_probe`** — 8-persona requirement interrogation; stops on mechanical saturation (net-new constraints < threshold for K=3 rounds) and emits a ready-to-run autoresearch config. Flags: `--depth`, `--personas`, `--saturation-threshold`, `--mode`, `--adversarial`, `--chain`. Output: `probe/{YYMMDD}-{HHMM}-{slug}/`. Ref: `references/probe-workflow.md`.
+
+All subcommands honor `Iterations: N` / `--iterations N` for bounded mode and `--chain <targets>` for pipelines (see `references/common-chains.md`). Shared setup, flags, and anti-patterns live in `references/common-setup.md`.
 
 ## When to Activate
 
@@ -695,6 +183,31 @@ This means: "optimize coverage, but reject any change that grows bundle size mor
 | `Guard-Threshold` | Only for metric-valued | Max allowed regression as % of baseline (e.g., `5%`, `0%` for strict) |
 
 Without `Guard-Direction` and `Guard-Threshold`, the guard operates in pass/fail mode.
+
+## Context Rotation (Anti-Context-Rot)
+
+For long unbounded runs (>30 iterations) where context window pressure degrades model performance, enable fresh-context mode:
+
+```
+Context-Mode: fresh
+```
+
+Or set environment: `AUTORESEARCH_CONTEXT_MODE=fresh`
+
+In fresh mode, the orchestrator spawns a worker subagent per iteration. The worker gets a clean context window each time (reads files fresh, makes one change, verifies, reports back). The orchestrator never reads in-scope files — context stays ~5k tokens permanently.
+
+**When to use:** Unbounded overnight runs, large files (>1000 LOC), open-source models with context degradation after ~100k tokens.
+
+**Requirements:** Worker subagent definition present (`.opencode/agents/autoresearch-worker.md` for Claude Code, `.opencode/agents/autoresearch-worker.md` for OpenCode).
+
+**State persistence:** Fresh mode commits `autoresearch-state.json` to git after each iteration. This enables session resume — a new session reads state.json + git log and picks up where the previous one left off.
+
+Resume an interrupted fresh-mode run:
+```
+/autoresearch --resume
+```
+
+See `references/context-rotation-protocol.md` for the full orchestrator/worker architecture.
 
 ## Setup Phase (Do Once)
 
@@ -801,16 +314,3 @@ See `references/core-principles.md` for the 7 generalizable principles from auto
 | Subjective refinement | Judge consensus + convergence (higher) | Any subjective content | `/autoresearch_reason` | — |
 
 Adapt the loop to your domain. The PRINCIPLES are universal; the METRICS are domain-specific.
-
-## Post-Completion: Support Prompt (Once Per Project)
-
-After the FIRST successful completion of any autoresearch command in a project (loop finishes, summary printed, or bounded iterations complete), check if the file `.autoresearch-starred` exists in the project root.
-
-**If it does NOT exist:**
-
-Ask the user: *"If autoresearch helped, would you like to star the repo on GitHub to support the project? I can run `gh api -X PUT /user/starred/uditgoenka/autoresearch` for you."*
-
-- If yes → run the command, then create `.autoresearch-starred` marker file
-- If no → create `.autoresearch-starred` marker file (never ask again)
-
-**If it exists:** skip entirely. Never ask twice.

@@ -148,6 +148,29 @@ iteration	commit	metric	delta	guard	guard-metric	status	description
 - Read last 10-20 entries at start of each iteration for context
 - Use to detect patterns: what kind of changes tend to succeed?
 
+## State File (Fresh Mode Only)
+
+When `Context-Mode: fresh` is enabled, additionally maintain `autoresearch-state.json` which IS committed to git. The **canonical schema** lives in `context-rotation-protocol.md` — see that file for the full field list. Summary:
+
+```json
+{
+  "config": {"goal": "...", "scope": "...", "metric": "...", "verify": "...", "guard": "...",
+             "guard_direction": "...", "guard_threshold": "...", "direction": "higher|lower",
+             "max_iterations": null, "plateau_patience": 15, "noise_floor": null},
+  "state": {"iteration": 47, "baseline_metric": 1.2, "best_metric": 1.84, "best_iteration": 32,
+            "iterations_since_best": 15, "consecutive_discards": 2, "context_mode": "fresh"},
+  "patterns": {"successes": ["..."], "failures": ["..."]}
+}
+```
+
+All `config.*` fields are write-once at setup and required for `/autoresearch --resume` to reconstruct plateau, noise-floor, and bounded-mode budget without re-prompting. Update state.json after every iteration. Commit it: `git add autoresearch-state.json && git commit -m "state: iteration {N}"`
+
+**Resume protocol:** On fresh session with `/autoresearch --resume`:
+1. Read `autoresearch-state.json` for config + current state
+2. Read `git log --oneline -20` for experiment history
+3. Read `autoresearch-results.tsv` tail for iteration context
+4. Reconstruct patterns, plateau tracking, continue from `state.iteration + 1`
+
 ## Summary Reporting
 
 Every 10 iterations (or at loop completion in bounded mode), print a brief summary:

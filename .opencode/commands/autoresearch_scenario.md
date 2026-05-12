@@ -26,7 +26,7 @@ If `Iterations: N` or `--iterations N` is found, set `max_iterations = N`. Track
 
 ## Execution
 
-1. Read the scenario workflow: `.claude/skills/autoresearch/references/scenario-workflow.md`
+1. Read the scenario workflow: `.opencode/skills/autoresearch/references/scenario-workflow.md`
 2. If scenario or domain is missing — use `question` with adaptive questions per scenario-workflow.md
 3. Execute the 7-phase scenario loop
 4. If bounded: after each iteration, check `current_iteration < max_iterations`. If not, STOP and print summary.

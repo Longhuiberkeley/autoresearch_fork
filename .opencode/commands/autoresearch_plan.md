@@ -15,7 +15,7 @@ Extract the goal from $ARGUMENTS. The user may provide extensive context — tre
 
 ## Execution
 
-1. Read the plan workflow: `.claude/skills/autoresearch/references/plan-workflow.md`
+1. Read the plan workflow: `.opencode/skills/autoresearch/references/plan-workflow.md`
 2. Execute the 7-step planning wizard
 3. If `--chain` is set, hand off to each chained command sequentially per plan-workflow.md Chain Conversion section.
 

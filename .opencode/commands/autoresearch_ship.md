@@ -28,7 +28,7 @@ All remaining text in $ARGUMENTS is additional context — use it to understand 
 
 ## Execution
 
-1. Read the ship workflow: `.claude/skills/autoresearch/references/ship-workflow.md`
+1. Read the ship workflow: `.opencode/skills/autoresearch/references/ship-workflow.md`
 2. If ship type is unclear — use `question` with batched questions per ship-workflow.md
 3. Execute the 8-phase ship workflow
 4. If `--chain` is set, hand off to each chained command sequentially per ship-workflow.md Chain Conversion section.

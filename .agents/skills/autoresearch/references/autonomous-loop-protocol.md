@@ -11,6 +11,22 @@ Autoresearch supports two loop modes:
 
 When bounded, track `current_iteration` against `max_iterations`. After the final iteration, print a summary and stop.
 
+## Context Mode
+
+Two execution modes control how iterations run within the loop:
+
+- **`inline` (default):** Orchestrator reads files, makes changes, and verifies — all in one session. Context accumulates over iterations. Best for bounded runs under ~30 iterations.
+- **`fresh`:** Orchestrator spawns a worker subagent per iteration. Worker gets clean context each time. Orchestrator never reads in-scope files. Enables unbounded runs without context degradation.
+
+Configure via inline config: `Context-Mode: fresh` or environment: `AUTORESEARCH_CONTEXT_MODE=fresh`. See `references/context-rotation-protocol.md` for the full orchestrator/worker protocol.
+
+When context mode is `fresh`:
+- Phase 0: Additionally verify worker subagent is available (Agent/task tool exists)
+- Phase 1: Skip in-scope file reads; read only git log + state.json + results TSV
+- Phase 3: Replace inline modification with worker subagent dispatch
+- Phase 6: Worker returns structured result — orchestrator decides keep/discard
+- Phase 7: Additionally update `autoresearch-state.json` (committed to git)
+
 ## Phase 0: Precondition Checks (before loop starts)
 
 **MUST complete ALL checks before entering the loop. Fail fast if any check fails.**
@@ -50,13 +66,34 @@ GUARD_BASELINE=$(<guard command>)
 # Record alongside the primary metric baseline in iteration 0
 ```
 
+**7. Detect context mode:**
+```bash
+# Check inline config for Context-Mode: fresh
+# If not in inline config, check AUTORESEARCH_CONTEXT_MODE env var
+CONTEXT_MODE="inline"  # default
+if grep -q "Context-Mode: fresh" <<< "$INLINE_CONFIG"; then
+  CONTEXT_MODE="fresh"
+elif [[ "${AUTORESEARCH_CONTEXT_MODE:-}" == "fresh" ]]; then
+  CONTEXT_MODE="fresh"
+fi
+
+# If fresh mode, verify worker subagent availability
+if [[ "$CONTEXT_MODE" == "fresh" ]]; then
+  # Claude Code: Agent tool must be available (built-in)
+  # OpenCode: task tool must be available (built-in)
+  # Check that .claude/agents/autoresearch-worker.md or equivalent exists
+  echo "INFO: context mode = fresh (worker subagent per iteration)"
+fi
+```
+
 **If any FAIL:** Stop and inform user. Do not enter the loop with broken preconditions.
 **If any WARN:** Log the warning, proceed with caution, inform user.
 
 ## Phase 1: Review (30 seconds)
 
-Before each iteration, build situational awareness. **You MUST complete ALL 6 steps — git history is critical for learning from past iterations.**
+Before each iteration, build situational awareness. **You MUST complete ALL steps — git history is critical for learning from past iterations.**
 
+**Inline mode (default):**
 ```
 1. Read current state of in-scope files (full context)
 2. Read last 10-20 entries from results log
@@ -64,6 +101,17 @@ Before each iteration, build situational awareness. **You MUST complete ALL 6 st
 4. MUST run: git diff HEAD~1 (if last iteration was "keep") to review what worked
 5. Identify: what worked, what failed, what's untried — based on BOTH results log AND git history
 6. If bounded: check current_iteration vs max_iterations
+```
+
+**Fresh mode (Context-Mode: fresh):**
+```
+1. Read autoresearch-state.json — current state, best metric, patterns
+2. Read last 10-20 entries from results log (for pattern recognition)
+3. MUST run: git log --oneline -20 to see recent experiments (kept vs reverted)
+4. MUST run: git log --oneline -20 --diff-filter=M --name-only | sort | uniq -c | sort -rn (which files drive improvements)
+5. Identify: what worked, what failed, what's untried — based on BOTH results log AND git history
+6. If bounded: check current_iteration vs max_iterations
+7. NEVER read in-scope files directly — worker subagent reads those fresh each iteration
 ```
 
 **Why read git history every time?** Git IS the memory. After rollbacks, state may differ from what you expect. The git log shows which experiments were kept vs reverted. The git diff of kept changes reveals WHAT specifically improved the metric — use this to inform the next iteration. Never assume — always verify.
@@ -262,6 +310,54 @@ Pick the NEXT change. **MUST consult git history and results log before deciding
 **Bounded mode consideration:** If remaining iterations are limited (<3 left), prioritize exploiting successes over exploration.
 
 ## Phase 3: Modify (One Atomic Change)
+
+### Fresh Mode (Context-Mode: fresh) — Dispatch Worker Subagent
+
+When running in fresh mode, the orchestrator does NOT modify files directly. Instead, dispatch a worker subagent:
+
+**Claude Code:**
+```
+Task(description="Execute one atomic experiment", prompt="<worker prompt template>", subagent_type="autoresearch-worker")
+```
+Worker is defined in `.claude/agents/autoresearch-worker.md`.
+
+**OpenCode:**
+```
+task(description="Execute one atomic experiment", prompt="<worker prompt template>", subagent_type="general")
+```
+Worker is defined in `.opencode/agents/autoresearch-worker.md`.
+
+**Worker prompt template:**
+```
+You are an autoresearch worker agent. Make exactly ONE atomic change.
+
+CONFIGURATION:
+Goal: {goal}
+Scope files to modify: {comma-separated file paths}
+Verify: {verify_command}
+Guard: {guard_command or "none"}
+Direction: {higher|lower} is better
+
+EXPERIMENT:
+{one-sentence experiment description}
+
+STEPS:
+1. Read the specified scope files
+2. Make exactly ONE change to implement the experiment
+3. Run: git add <files> && git commit -m "experiment(<scope>): <description>"
+4. Run the verify command and extract the metric number
+5. If guard is set, run the guard command (exit 0 = pass)
+6. Return EXACTLY this format (no other text):
+
+METRIC: <number>
+GUARD: pass|fail
+COMMIT: <short hash>
+NOTE: <one sentence>
+```
+
+Worker returns structured result. Proceed to Phase 6 (Decide) — the worker already committed and verified.
+
+### Inline Mode (default) — Modify Files Directly
 
 - Make ONE focused change to in-scope files
 - The change should be explainable in one sentence
@@ -734,6 +830,50 @@ iteration  commit   metric   status        description
 ```
 
 **Valid statuses:** `keep`, `keep (reworked)`, `discard`, `crash`, `no-op`, `hook-blocked`, `metric-error`
+
+### State File Persistence (Fresh Mode)
+
+When running in fresh mode, additionally update `autoresearch-state.json` after every iteration. This file is committed to git (unlike `autoresearch-results.tsv` which is gitignored). It enables session resume and crash recovery.
+
+```json
+{
+  "config": {
+    "goal": "<user goal>",
+    "scope": "<file globs>",
+    "metric": "<metric name>",
+    "verify": "<shell command>",
+    "guard": "<shell command or null>",
+    "guard_direction": "lower|higher|null",
+    "guard_threshold": "<percent or null>",
+    "direction": "higher|lower",
+    "max_iterations": "<int or null>",
+    "plateau_patience": "<int or \"off\">",
+    "noise_floor": "<number or null>"
+  },
+  "state": {
+    "iteration": 47,
+    "baseline_metric": 1.2,
+    "best_metric": 1.84,
+    "best_iteration": 32,
+    "iterations_since_best": 15,
+    "consecutive_discards": 2,
+    "context_mode": "fresh"
+  },
+  "patterns": {
+    "successes": ["momentum-based entry signals (+0.3 Sharpe)"],
+    "failures": ["mean-reversion on daily timeframe (reverted)"]
+  }
+}
+```
+
+Update state.json after every iteration:
+1. Increment `state.iteration`
+2. Update `state.best_metric` and `state.best_iteration` if new best
+3. Update `state.iterations_since_best` (reset to 0 on new best, increment otherwise)
+4. Update `state.consecutive_discards`
+5. Append to `patterns.successes` for "keep" status (keep last 10)
+6. Append to `patterns.failures` for "discard" status (keep last 10)
+7. Commit state.json: `git add autoresearch-state.json && git commit -m "state: iteration {N}"`
 
 ## Phase 8: Repeat
 

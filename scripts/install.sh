@@ -10,6 +10,7 @@ TOOL=""
 LOCATION=""
 CONFIG_DIR=""
 FORCE=0
+SUFFIX=""
 
 cancelled() { printf "\nInstallation cancelled\n"; exit 0; }
 trap cancelled INT
@@ -25,12 +26,17 @@ Options:
   -g, --global        Install globally
   -l, --local         Install in the current project
   -c, --config-dir    Override the global config directory
+  --suffix <text>     Install with a name suffix (e.g. --suffix fork installs the
+                      skill as "autoresearch-fork" so it co-exists with another
+                      copy of autoresearch on the same global install. Only
+                      meaningful with --global.)
   --force             Replace existing files without prompting
   -h, --help          Show this help message
 
 Examples:
   ./scripts/install.sh                          # interactive
   ./scripts/install.sh --claude --global
+  ./scripts/install.sh --claude --global --suffix fork
   ./scripts/install.sh --opencode --local
   ./scripts/install.sh --codex --global
 EOF
@@ -74,6 +80,13 @@ parse_args() {
       --config-dir=*)
         CONFIG_DIR="$(expand_path "${1#*=}")"
         if [[ -z "$CONFIG_DIR" ]]; then die "--config-dir requires a path"; fi ;;
+      --suffix)
+        shift
+        if [[ $# -eq 0 ]]; then die "--suffix requires a value"; fi
+        SUFFIX="$1" ;;
+      --suffix=*)
+        SUFFIX="${1#*=}"
+        if [[ -z "$SUFFIX" ]]; then die "--suffix requires a value"; fi ;;
       --force) FORCE=1 ;;
       -h|--help) usage; exit 0 ;;
       *) die "unknown argument: $1" ;;
@@ -83,6 +96,42 @@ parse_args() {
   if [[ -n "$CONFIG_DIR" && "$LOCATION" == "local" ]]; then
     die "--config-dir can only be used with --global"
   fi
+  if [[ -n "$SUFFIX" && ! "$SUFFIX" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+    die "--suffix must be lowercase alphanumerics + hyphens (got: $SUFFIX)"
+  fi
+}
+
+skill_name() { if [[ -n "$SUFFIX" ]]; then printf 'autoresearch-%s\n' "$SUFFIX"; else printf 'autoresearch\n'; fi; }
+
+# Patch frontmatter `name: autoresearch` → `name: autoresearch-<suffix>` and any
+# `/autoresearch:` slash command tokens → `/autoresearch-<suffix>:` inside an
+# installed file. No-op when SUFFIX is empty.
+patch_suffix() {
+  local file="$1" sname
+  [[ -z "$SUFFIX" ]] && return 0
+  [[ -f "$file" ]] || return 0
+  sname="$(skill_name)"
+  # Portable BSD/GNU sed in-place edit.
+  # Order: do all forms that ANCHOR on a distinguishing suffix character first
+  # (`:`, `_`, `.md`, `-worker`), then handle bare `/autoresearch` with an
+  # explicit guard that the next char is NOT `-` (which would already mean it
+  # is suffixed) and NOT an alnum (which would be a longer identifier).
+  sed -i.bak \
+    -e "s|^name: autoresearch:|name: ${sname}:|" \
+    -e "s|^name: autoresearch_|name: ${sname}_|" \
+    -e "s|^name: autoresearch$|name: ${sname}|" \
+    -e "s|^name: autoresearch\\.md$|name: ${sname}.md|" \
+    -e "s|/autoresearch:|/${sname}:|g" \
+    -e "s|/autoresearch_|/${sname}_|g" \
+    -e "s|/autoresearch\\.md|/${sname}.md|g" \
+    -e "s|autoresearch-worker|${sname}-worker|g" \
+    -e "s|/autoresearch\\([^-:_a-zA-Z0-9]\\)|/${sname}\\1|g" \
+    -e "s|/autoresearch$|/${sname}|g" \
+    -e "s|\\\$autoresearch |\$${sname} |g" \
+    -e "s|\\.claude/skills/autoresearch/|.claude/skills/${sname}/|g" \
+    -e "s|\\.opencode/skills/autoresearch/|.opencode/skills/${sname}/|g" \
+    "$file"
+  rm -f "$file.bak"
 }
 
 get_global_dir() {
@@ -164,7 +213,7 @@ sync_file() { mkdir -p "$(dirname "$2")"; cp "$1" "$2"; }
 confirm_overwrite() {
   local target_root="$1"
   if [[ $FORCE -eq 1 ]]; then return 0; fi
-  if [[ ! -d "$target_root/skills/autoresearch" ]]; then return 0; fi
+  if [[ ! -d "$target_root/skills/$(skill_name)" ]]; then return 0; fi
   if ! is_interactive; then return 0; fi
   local answer
   printf 'Existing autoresearch files found in %s. Replace? [Y/n]: ' "$target_root"
@@ -176,35 +225,86 @@ confirm_overwrite() {
 }
 
 install_claude() {
-  local t="$1"
-  mkdir -p "$t/skills" "$t/commands"
-  sync_dir "$REPO_ROOT/.claude/skills/autoresearch" "$t/skills/autoresearch"
+  local t="$1" sname f
+  sname="$(skill_name)"
+  mkdir -p "$t/skills" "$t/commands" "$t/agents"
+
+  sync_dir "$REPO_ROOT/.claude/skills/autoresearch" "$t/skills/$sname"
+  patch_suffix "$t/skills/$sname/SKILL.md"
+  if [[ -d "$t/skills/$sname/references" ]]; then
+    for f in "$t/skills/$sname/references"/*.md; do patch_suffix "$f"; done
+  fi
+
   if [[ -d "$REPO_ROOT/.claude/commands/autoresearch" ]]; then
-    sync_dir "$REPO_ROOT/.claude/commands/autoresearch" "$t/commands/autoresearch"
+    sync_dir "$REPO_ROOT/.claude/commands/autoresearch" "$t/commands/$sname"
+    for f in "$t/commands/$sname"/*.md; do patch_suffix "$f"; done
   fi
   if [[ -f "$REPO_ROOT/.claude/commands/autoresearch.md" ]]; then
-    sync_file "$REPO_ROOT/.claude/commands/autoresearch.md" "$t/commands/autoresearch.md"
+    sync_file "$REPO_ROOT/.claude/commands/autoresearch.md" "$t/commands/$sname.md"
+    patch_suffix "$t/commands/$sname.md"
+  fi
+  if [[ -f "$REPO_ROOT/.claude/agents/autoresearch-worker.md" ]]; then
+    local agent_name="autoresearch-worker"
+    [[ -n "$SUFFIX" ]] && agent_name="autoresearch-${SUFFIX}-worker"
+    sync_file "$REPO_ROOT/.claude/agents/autoresearch-worker.md" "$t/agents/${agent_name}.md"
+    if [[ -n "$SUFFIX" ]]; then
+      sed -i.bak "s|^name: autoresearch-worker$|name: ${agent_name}|" "$t/agents/${agent_name}.md"
+      rm -f "$t/agents/${agent_name}.md.bak"
+    fi
   fi
 }
 
 install_opencode() {
-  local t="$1" src
+  local t="$1" sname src dst agent_name f
+  sname="$(skill_name)"
   mkdir -p "$t/skills" "$t/commands" "$t/agents"
-  sync_dir "$REPO_ROOT/.opencode/skills/autoresearch" "$t/skills/autoresearch"
+
+  sync_dir "$REPO_ROOT/.opencode/skills/autoresearch" "$t/skills/$sname"
+  patch_suffix "$t/skills/$sname/SKILL.md"
+  if [[ -d "$t/skills/$sname/references" ]]; then
+    for f in "$t/skills/$sname/references"/*.md; do patch_suffix "$f"; done
+  fi
+
   for src in "$REPO_ROOT"/.opencode/commands/autoresearch*.md; do
-    if [[ -f "$src" ]]; then
-      sync_file "$src" "$t/commands/$(basename "$src")"
+    [[ -f "$src" ]] || continue
+    # autoresearch.md → <sname>.md ; autoresearch_plan.md → <sname>_plan.md
+    dst="$(basename "$src")"
+    dst="${dst/autoresearch/$sname}"
+    sync_file "$src" "$t/commands/$dst"
+    patch_suffix "$t/commands/$dst"
+  done
+
+  for src in "$REPO_ROOT"/.opencode/agents/*.md; do
+    [[ -f "$src" ]] || continue
+    agent_name="$(basename "$src" .md)"
+    if [[ -n "$SUFFIX" && "$agent_name" == "autoresearch-worker" ]]; then
+      agent_name="autoresearch-${SUFFIX}-worker"
+      sync_file "$src" "$t/agents/${agent_name}.md"
+      sed -i.bak "s|^name: autoresearch-worker$|name: ${agent_name}|" "$t/agents/${agent_name}.md"
+      rm -f "$t/agents/${agent_name}.md.bak"
+    else
+      sync_file "$src" "$t/agents/$(basename "$src")"
     fi
   done
-  sync_file "$REPO_ROOT/.opencode/agents/docs-manager.md" "$t/agents/docs-manager.md"
 }
 
 install_codex() {
-  local t="$1"
+  local t="$1" sname f worker_path agent_name
+  sname="$(skill_name)"
   mkdir -p "$t/skills"
-  sync_dir "$REPO_ROOT/.agents/skills/autoresearch" "$t/skills/autoresearch"
-  sync_file "$REPO_ROOT/plugins/autoresearch/resources/autoresearch-command-spec.json" "$t/skills/autoresearch/resources/autoresearch-command-spec.json"
-  sync_file "$REPO_ROOT/plugins/autoresearch/scripts/autoresearch_cli.py" "$t/skills/autoresearch/scripts/autoresearch_cli.py"
+  sync_dir "$REPO_ROOT/.agents/skills/autoresearch" "$t/skills/$sname"
+  patch_suffix "$t/skills/$sname/SKILL.md"
+  if [[ -d "$t/skills/$sname/references" ]]; then
+    for f in "$t/skills/$sname/references"/*.md; do patch_suffix "$f"; done
+  fi
+  worker_path="$t/skills/$sname/agents/autoresearch-worker.md"
+  if [[ -f "$worker_path" && -n "$SUFFIX" ]]; then
+    agent_name="autoresearch-${SUFFIX}-worker"
+    sed -i.bak "s|^name: autoresearch-worker$|name: ${agent_name}|" "$worker_path"
+    rm -f "$worker_path.bak"
+  fi
+  sync_file "$REPO_ROOT/plugins/autoresearch/resources/autoresearch-command-spec.json" "$t/skills/$sname/resources/autoresearch-command-spec.json"
+  sync_file "$REPO_ROOT/plugins/autoresearch/scripts/autoresearch_cli.py" "$t/skills/$sname/scripts/autoresearch_cli.py"
 }
 
 main() {

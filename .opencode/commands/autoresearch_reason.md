@@ -27,7 +27,7 @@ All remaining text not matching flags is the task/question description.
 
 ## Execution
 
-1. Read the reason workflow: `.claude/skills/autoresearch/references/reason-workflow.md`
+1. Read the reason workflow: `.opencode/skills/autoresearch/references/reason-workflow.md`
 2. If task, domain, or mode is missing — use `question` with batched questions per reason-workflow.md
 3. Execute the multi-phase reason workflow
 4. If bounded: after each iteration, check `current_iteration < max_iterations`. If not, STOP and print summary.

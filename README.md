@@ -9,7 +9,7 @@ Based on [Karpathy's autoresearch](https://github.com/karpathy/autoresearch) —
 [![Claude Code Skill](https://img.shields.io/badge/Claude_Code-Skill-blue?logo=anthropic&logoColor=white)](https://docs.anthropic.com/en/docs/claude-code)
 [![OpenCode](https://img.shields.io/badge/OpenCode-Skill-purple)](https://opencode.ai)
 [![Codex](https://img.shields.io/badge/Codex-Skill-green?logo=openai&logoColor=white)](https://developers.openai.com/codex)
-[![Version](https://img.shields.io/badge/version-2.0.03-blue.svg)](https://github.com/uditgoenka/autoresearch/releases)
+[![Version](https://img.shields.io/badge/version-2.0.04-blue.svg)](https://github.com/uditgoenka/autoresearch/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 [![Based on](https://img.shields.io/badge/Based_on-Karpathy's_Autoresearch-orange)](https://github.com/karpathy/autoresearch)
@@ -263,6 +263,22 @@ cp -r autoresearch/.agents/skills/autoresearch ~/.codex/skills/autoresearch
 ```
 
 > **Codex invocation:** Use `$autoresearch` mention syntax in your prompt. Subcommands are keywords — `$autoresearch plan`, `$autoresearch debug`, `$autoresearch security`, etc. Codex discovers installed skills from `${CODEX_HOME:-~/.codex}/skills` and project-local `.codex/skills/` directories.
+
+### Side-by-Side Install (Fork)
+
+If you already have upstream `autoresearch` installed globally and want this fork alongside it, clone the fork repo and pass `--suffix <name>` to the installer. The skill is installed under `autoresearch-<name>/` with all slash commands renamed to match (e.g. `/autoresearch-fork`, `/autoresearch-fork:plan`). The worker subagent is also suffixed so context-rotation runs don't collide.
+
+```bash
+git clone https://github.com/Longhuiberkeley/autoresearch_fork.git
+cd autoresearch_fork
+./scripts/install.sh --claude   --global --suffix fork
+./scripts/install.sh --opencode --global --suffix fork
+./scripts/install.sh --codex    --global --suffix fork
+```
+
+Local installs (project `.claude/` / `.opencode/`) don't need a suffix — they're already isolated.
+
+> **Note:** The upstream install commands above (`npx skills add uditgoenka/autoresearch`, `git clone .../uditgoenka/autoresearch.git`) install the upstream skill, NOT this fork. Use the fork URL above when you want the fork specifically.
 
 ### 2. Run It
 

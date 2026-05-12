@@ -25,7 +25,7 @@ All remaining text in $ARGUMENTS is additional context — use it to understand 
 
 ## Execution
 
-1. Read the debug workflow: `.claude/skills/autoresearch/references/debug-workflow.md`
+1. Read the debug workflow: `.opencode/skills/autoresearch/references/debug-workflow.md`
 2. If scope or symptom is missing — use `question` with batched questions per debug-workflow.md
 3. Execute the 7-phase debug loop
 4. If bounded: after each iteration, check `current_iteration < max_iterations`. If not, STOP and print summary.

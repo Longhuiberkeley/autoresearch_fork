@@ -26,7 +26,7 @@ All remaining text in $ARGUMENTS is additional context — use it to understand 
 
 ## Execution
 
-1. Read the fix workflow: `.claude/skills/autoresearch/references/fix-workflow.md`
+1. Read the fix workflow: `.opencode/skills/autoresearch/references/fix-workflow.md`
 2. If target and scope are missing — use `question` with batched questions per fix-workflow.md
 3. Execute the 8-phase fix loop: ONE fix per iteration, never suppress errors, auto-revert on regression
 4. If bounded: after each iteration, check `current_iteration < max_iterations`. If not, STOP and print summary.
