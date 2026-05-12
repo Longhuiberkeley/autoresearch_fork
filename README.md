@@ -9,7 +9,7 @@ Based on [Karpathy's autoresearch](https://github.com/karpathy/autoresearch) —
 [![Claude Code Skill](https://img.shields.io/badge/Claude_Code-Skill-blue?logo=anthropic&logoColor=white)](https://docs.anthropic.com/en/docs/claude-code)
 [![OpenCode](https://img.shields.io/badge/OpenCode-Skill-purple)](https://opencode.ai)
 [![Codex](https://img.shields.io/badge/Codex-Skill-green?logo=openai&logoColor=white)](https://developers.openai.com/codex)
-[![Version](https://img.shields.io/badge/version-2.0.04-blue.svg)](https://github.com/uditgoenka/autoresearch/releases)
+[![Version](https://img.shields.io/badge/version-2.0.04-blue.svg)](https://github.com/Longhuiberkeley/autoresearch_fork/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 [![Based on](https://img.shields.io/badge/Based_on-Karpathy's_Autoresearch-orange)](https://github.com/karpathy/autoresearch)
@@ -161,7 +161,24 @@ Before looping, Claude performs a one-time setup:
 
 ### Claude Code
 
-**Option A — npx install (recommended):**
+**Option A — Guided installer (recommended for this fork):**
+
+```bash
+git clone https://github.com/Longhuiberkeley/autoresearch_fork.git
+cd autoresearch_fork
+./scripts/install.sh --claude --global
+```
+
+Or install **project-local** (inside the current directory only):
+```bash
+git clone https://github.com/Longhuiberkeley/autoresearch_fork.git
+cd autoresearch_fork
+./scripts/install.sh --claude --local
+```
+
+> **Note:** Start a new Claude Code session after installing. Reference files aren't resolvable in the same session where installation happened — this is a Claude Code platform limitation.
+
+**Option B — npx install (upstream only):**
 
 ```bash
 npx skills add uditgoenka/autoresearch
@@ -169,7 +186,7 @@ npx skills add uditgoenka/autoresearch
 
 That's it. All 11 commands are available after restarting Claude Code.
 
-**Option B — Plugin install:**
+**Option C — Plugin install (upstream only):**
 
 In Claude Code, run:
 ```
@@ -177,94 +194,99 @@ In Claude Code, run:
 /plugin install autoresearch@autoresearch
 ```
 
-> **Note:** Start a new Claude Code session after installing. Reference files aren't resolvable in the same session where installation happened — this is a Claude Code platform limitation.
-
-**Updating (no reinstall needed):**
+**Updating (plugin, upstream only):**
 ```
 /plugin update autoresearch
 ```
 
 That pulls the latest version. Run `/reload-plugins` to activate. No need to uninstall or re-clone.
 
-**Option C — Manual copy:**
+**Option D — Manual copy:**
 ```bash
-git clone https://github.com/uditgoenka/autoresearch.git
+git clone https://github.com/Longhuiberkeley/autoresearch_fork.git
 
 # Copy skill + subcommands to your project
-cp -r autoresearch/claude-plugin/skills/autoresearch .claude/skills/autoresearch
-cp -r autoresearch/claude-plugin/commands/autoresearch .claude/commands/autoresearch
-cp autoresearch/claude-plugin/commands/autoresearch.md .claude/commands/autoresearch.md
+cp -r autoresearch_fork/.claude/skills/autoresearch .claude/skills/autoresearch
+cp -r autoresearch_fork/.claude/commands/autoresearch .claude/commands/autoresearch
+cp autoresearch_fork/.claude/commands/autoresearch.md .claude/commands/autoresearch.md
 ```
 
 Or install globally:
 ```bash
-cp -r autoresearch/claude-plugin/skills/autoresearch ~/.claude/skills/autoresearch
-cp -r autoresearch/claude-plugin/commands/autoresearch ~/.claude/commands/autoresearch
-cp autoresearch/claude-plugin/commands/autoresearch.md ~/.claude/commands/autoresearch.md
+cp -r autoresearch_fork/.claude/skills/autoresearch ~/.claude/skills/autoresearch
+cp -r autoresearch_fork/.claude/commands/autoresearch ~/.claude/commands/autoresearch
+cp autoresearch_fork/.claude/commands/autoresearch.md ~/.claude/commands/autoresearch.md
 ```
 
 > **Note:** The `commands/` directory is required for subcommands (`/autoresearch:ship`, `/autoresearch:plan`, `/autoresearch:security`) to work.
 
-**Option D — Guided installer:**
-```bash
-git clone https://github.com/uditgoenka/autoresearch.git
-cd autoresearch
-./scripts/install.sh --claude --global
-```
-
 ### OpenCode Quick Start
 
-**Option A — Guided installer (recommended):**
+**Option A — Guided installer (recommended for this fork):**
 ```bash
-git clone https://github.com/uditgoenka/autoresearch.git
-cd autoresearch
+git clone https://github.com/Longhuiberkeley/autoresearch_fork.git
+cd autoresearch_fork
 ./scripts/install.sh --opencode --global
+```
+
+Or install **project-local** (inside the current directory only):
+```bash
+git clone https://github.com/Longhuiberkeley/autoresearch_fork.git
+cd autoresearch_fork
+./scripts/install.sh --opencode --local
 ```
 
 **Option B — Manual copy:**
 ```bash
-git clone https://github.com/uditgoenka/autoresearch.git
+git clone https://github.com/Longhuiberkeley/autoresearch_fork.git
 
 # Copy to your project
-cp -r autoresearch/.opencode/skills/autoresearch .opencode/skills/autoresearch
-cp autoresearch/.opencode/commands/autoresearch*.md .opencode/commands/
-cp autoresearch/.opencode/agents/docs-manager.md .opencode/agents/docs-manager.md
+cp -r autoresearch_fork/.opencode/skills/autoresearch .opencode/skills/autoresearch
+cp autoresearch_fork/.opencode/commands/autoresearch*.md .opencode/commands/
+cp autoresearch_fork/.opencode/agents/autoresearch-worker.md .opencode/agents/autoresearch-worker.md
 ```
 
 Or install globally:
 ```bash
-cp -r autoresearch/.opencode/skills/autoresearch ~/.config/opencode/skills/autoresearch
-cp autoresearch/.opencode/commands/autoresearch*.md ~/.config/opencode/commands/
-cp autoresearch/.opencode/agents/docs-manager.md ~/.config/opencode/agents/docs-manager.md
+cp -r autoresearch_fork/.opencode/skills/autoresearch ~/.config/opencode/skills/autoresearch
+cp autoresearch_fork/.opencode/commands/autoresearch*.md ~/.config/opencode/commands/
+cp autoresearch_fork/.opencode/agents/autoresearch-worker.md ~/.config/opencode/agents/autoresearch-worker.md
 ```
 
 > **OpenCode command names:** Use underscores instead of colons — `/autoresearch_debug`, `/autoresearch_fix`, `/autoresearch_plan`, etc. All 11 commands are available.
 
 ### Codex Quick Start
 
-**Option A — Guided installer (recommended):**
+**Option A — Guided installer (recommended for this fork):**
 ```bash
-git clone https://github.com/uditgoenka/autoresearch.git
-cd autoresearch
+git clone https://github.com/Longhuiberkeley/autoresearch_fork.git
+cd autoresearch_fork
 ./scripts/install.sh --codex --global
+```
+
+Or install **project-local** (inside the current directory only):
+```bash
+git clone https://github.com/Longhuiberkeley/autoresearch_fork.git
+cd autoresearch_fork
+./scripts/install.sh --codex --local
 ```
 
 **Option B — Manual copy:**
 ```bash
-git clone https://github.com/uditgoenka/autoresearch.git
+git clone https://github.com/Longhuiberkeley/autoresearch_fork.git
 
 # Copy to your project
-cp -r autoresearch/.agents/skills/autoresearch .codex/skills/autoresearch
+cp -r autoresearch_fork/.agents/skills/autoresearch .codex/skills/autoresearch
 ```
 
 Or install globally:
 ```bash
-cp -r autoresearch/.agents/skills/autoresearch ~/.codex/skills/autoresearch
+cp -r autoresearch_fork/.agents/skills/autoresearch ~/.codex/skills/autoresearch
 ```
 
 > **Codex invocation:** Use `$autoresearch` mention syntax in your prompt. Subcommands are keywords — `$autoresearch plan`, `$autoresearch debug`, `$autoresearch security`, etc. Codex discovers installed skills from `${CODEX_HOME:-~/.codex}/skills` and project-local `.codex/skills/` directories.
 
-### Side-by-Side Install (Fork)
+### Side-by-Side Install (with upstream)
 
 If you already have upstream `autoresearch` installed globally and want this fork alongside it, clone the fork repo and pass `--suffix <name>` to the installer. The skill is installed under `autoresearch-<name>/` with all slash commands renamed to match (e.g. `/autoresearch-fork`, `/autoresearch-fork:plan`). The worker subagent is also suffixed so context-rotation runs don't collide.
 
@@ -278,7 +300,7 @@ cd autoresearch_fork
 
 Local installs (project `.claude/` / `.opencode/`) don't need a suffix — they're already isolated.
 
-> **Note:** The upstream install commands above (`npx skills add uditgoenka/autoresearch`, `git clone .../uditgoenka/autoresearch.git`) install the upstream skill, NOT this fork. Use the fork URL above when you want the fork specifically.
+> **Note:** The upstream install commands (`npx skills add uditgoenka/autoresearch`, `git clone .../uditgoenka/autoresearch.git`) install the upstream skill, NOT this fork. Use the fork URL above when you want this fork specifically.
 
 ### 2. Run It
 
@@ -604,7 +626,7 @@ autoresearch/
 A: Run `/autoresearch:plan` — it analyzes your codebase, suggests metrics, and dry-runs the verify command before you launch.
 
 **Q: Does this work with any project?**
-A: Yes. Any language, framework, or domain. Install via `/plugin marketplace add uditgoenka/autoresearch` (Claude Code), `./scripts/install.sh --opencode --global` (OpenCode), `./scripts/install.sh --codex --global` (Codex), or manually copy files.
+A: Yes. Any language, framework, or domain. Install via `./scripts/install.sh --claude --global` (Claude Code), `./scripts/install.sh --opencode --global` (OpenCode), `./scripts/install.sh --codex --global` (Codex), or manually copy files. See [Quick Start](#quick-start) above.
 
 **Q: Does this work with OpenCode?**
 A: Yes, as of v2.0.0. Run `./scripts/install.sh --opencode --global` or manually copy `.opencode/` files. Commands use underscore naming (`/autoresearch_debug` instead of `/autoresearch:debug`).
@@ -639,11 +661,11 @@ Areas of interest: new domain examples, verification script templates, CI/CD int
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=uditgoenka%2Fautoresearch&type=timeline&legend=top-left">
+<a href="https://www.star-history.com/?repos=Longhuiberkeley%2Fautoresearch_fork&type=timeline&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=uditgoenka/autoresearch&type=timeline&theme=dark&legend=bottom-right&v=20260319" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=uditgoenka/autoresearch&type=timeline&legend=bottom-right&v=20260319" />
-   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=uditgoenka/autoresearch&type=timeline&legend=bottom-right&v=20260319" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=Longhuiberkeley/autoresearch_fork&type=timeline&theme=dark&legend=bottom-right&v=20260319" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=Longhuiberkeley/autoresearch_fork&type=timeline&legend=bottom-right&v=20260319" />
+   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=Longhuiberkeley/autoresearch_fork&type=timeline&legend=bottom-right&v=20260319" />
  </picture>
 </a>
 
